@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Hook & Script Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons for clean UI -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-indigo-600 rounded-lg text-white">
+        <i data-lucide="zap" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-semibold leading-none">Hook & Script Engine</h1>
+        <p class="text-xs text-slate-400 mt-1">Short-Form Content & Visual Prompt Generator</p>
+      </div>
+    </div>
+    
+    <!-- API Key Input Section -->
+    <div class="flex items-center space-x-2">
+      <div class="relative">
+        <input 
+          id="apiKeyInput" 
+          type="password" 
+          placeholder="Enter Gemini API Key..." 
+          class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 w-48 sm:w-64 focus:outline-none focus:border-indigo-500 transition-colors"
+        />
+      </div>
+      <button 
+        id="saveKeyBtn" 
+        class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-medium border border-slate-700 transition"
+      >
+        Save
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Left Column: Controls & Inputs -->
+    <div class="lg:col-span-5 space-y-4">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Topic or Concept</label>
+          <textarea 
+            id="topicInput" 
+            rows="3" 
+            placeholder="e.g., How quick-commerce deliveries reach under 10 minutes or The mystery of the Wow! signal" 
+            class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500 placeholder-slate-600 resize-none"
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Narrative Vibe</label>
+            <select id="vibeSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs focus:outline-none focus:border-indigo-500 text-slate-200">
+              <option value="Curiosity & Suspense">Curiosity & Suspense</option>
+              <option value="Fast-Paced Tech Explainer">Fast-Paced Tech Explainer</option>
+              <option value="Contrarian & Provocative">Contrarian & Unpopular Opinion</option>
+              <option value="Deep Psychological Mystery">Deep Psychological Mystery</option>
+              <option value="Data-Driven Breakdown">Data-Driven Breakdown</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Target Duration</label>
+            <select id="durationSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs focus:outline-none focus:border-indigo-500 text-slate-200">
+              <option value="30 seconds (High velocity)">30 seconds (High velocity)</option>
+              <option value="45 seconds (Balanced)">45 seconds (Balanced)</option>
+              <option value="60 seconds (Story arc)">60 seconds (Story arc)</option>
+            </select>
+          </div>
+        </div>
+
+        <button 
+          id="generateBtn" 
+          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-sm flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+        >
+          <span id="btnText">Generate Script Variations</span>
+          <i id="btnIcon" data-lucide="sparkles" class="w-4 h-4"></i>
+        </button>
+
+        <div id="errorBox" class="hidden text-xs text-rose-400 bg-rose-950/40 border border-rose-900/50 p-3 rounded-lg"></div>
+      </div>
+
+      <!-- Quick Tips Box -->
+      <div class="border border-slate-800/80 rounded-xl p-4 text-xs text-slate-400 space-y-2 bg-slate-900/30">
+        <div class="flex items-center space-x-2 text-slate-300 font-medium">
+          <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+          <span>Execution Details</span>
+        </div>
+        <p>• Visual prompts include camera motions and aspect ratios (9:16) for Midjourney, Runway, or Google Flow.</p>
+        <p>• API keys are stored solely in your local browser storage and never transmitted to external servers.</p>
+      </div>
+    </div>
+
+    <!-- Right Column: Structured Output Display -->
+    <div class="lg:col-span-7 flex flex-col space-y-4">
+      
+      <!-- Empty State -->
+      <div id="emptyState" class="flex-1 min-h-[380px] border border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-3">
+        <div class="p-3 bg-slate-900 rounded-full border border-slate-800">
+          <i data-lucide="clapperboard" class="w-6 h-6 text-slate-600"></i>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-400">Ready to script</p>
+          <p class="text-xs max-w-sm mt-1">Provide your topic, select your narrative angle, and hit Generate to produce multi-hook variations and scene prompts.</p>
+        </div>
+      </div>
+
+      <!-- Results Output -->
+      <div id="outputContainer" class="hidden space-y-5"></div>
+    </div>
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // DOM Elements
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const topicInput = document.getElementById('topicInput');
+    const vibeSelect = document.getElementById('vibeSelect');
+    const durationSelect = document.getElementById('durationSelect');
+    const generateBtn = document.getElementById('generateBtn');
+    const btnText = document.getElementById('btnText');
+    const btnIcon = document.getElementById('btnIcon');
+    const errorBox = document.getElementById('errorBox');
+    const emptyState = document.getElementById('emptyState');
+    const outputContainer = document.getElementById('outputContainer');
+
+    // Load saved API Key from localStorage
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) {
+      apiKeyInput.value = savedKey;
+      saveKeyBtn.textContent = 'Saved';
+      saveKeyBtn.classList.add('text-emerald-400');
+    }
+
+    saveKeyBtn.addEventListener('click', () => {
+      const val = apiKeyInput.value.trim();
+      if (val) {
+        localStorage.setItem('gemini_api_key', val);
+        saveKeyBtn.textContent = 'Saved';
+        saveKeyBtn.classList.add('text-emerald-400');
+        hideError();
+      }
+    });
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBox.classList.add('hidden');
+    }
+
+    function setLoading(isLoading) {
+      if (isLoading) {
+        generateBtn.disabled = true;
+        btnText.textContent = 'Generating Script & Hooks...';
+        btnIcon.classList.add('animate-spin');
+      } else {
+        generateBtn.disabled = false;
+        btnText.textContent = 'Generate Script Variations';
+        btnIcon.classList.remove('animate-spin');
+      }
+    }
+
+    // Call Gemini 1.5 Flash using direct fetch
+    async function generateContent() {
+      hideError();
+      const apiKey = apiKeyInput.value.trim() || localStorage.getItem('gemini_api_key');
+      const topic = topicInput.value.trim();
+      const vibe = vibeSelect.value;
+      const duration = durationSelect.value;
+
+      if (!apiKey) {
+        showError('Please enter your Gemini API Key in the top right corner.');
+        return;
+      }
+
+      if (!topic) {
+        showError('Please provide a topic or concept to generate.');
+        return;
+      }
+
+      setLoading(true);
+
+      const systemPrompt = `You are an elite short-form content director and algorithm retention specialist.
+Given a topic, target vibe, and duration, output a valid JSON object matching the requested schema.
+Ensure your response is raw JSON only, without any markdown formatting or \`\`\`json wrappers.
+
+JSON Structure:
+{
+  "corePremise": "One-line distillation of the core intrigue",
+  "hooks": [
+    {
+      "type": "Curiosity Gap | Contrarian Shock | Data Anchor",
+      "spokenText": "The exact opening line spoken in first 3 seconds",
+      "onScreenText": "Short 3-5 word caption overlay",
+      "retentionRationale": "Why this holds attention"
+    }
+  ],
+  "scenes": [
+    {
+      "timecode": "0:00 - 0:05",
+      "voiceover": "Script spoken by narrator",
+      "visualPrompt": "Detailed visual generative prompt for 9:16 vertical video with lighting, framing, and camera movement"
+    }
+  ],
+  "callToAction": "Natural engagement question to generate comments"
+}`;
+
+      const userPrompt = `Topic: ${topic}\nVibe: ${vibe}\nTarget Duration: ${duration}\nProduce 3 distinct hooks and a full vertical video scene-by-scene script breakdown.`;
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: systemPrompt },
+                  { text: userPrompt }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || `HTTP error ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawText) {
+          throw new Error('No output returned from the model.');
+        }
+
+        const parsed = JSON.parse(rawText);
+        renderOutput(parsed);
+
+      } catch (err) {
+        showError(`Generation failed: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function renderOutput(data) {
+      emptyState.classList.add('hidden');
+      outputContainer.classList.remove('hidden');
+      outputContainer.innerHTML = '';
+
+      // 1. Premise & Header
+      const headerCard = document.createElement('div');
+      headerCard.className = 'bg-slate-900 border border-slate-800 rounded-xl p-4';
+      headerCard.innerHTML = `
+        <div class="text-xs uppercase font-semibold tracking-wider text-indigo-400">Core Premise</div>
+        <p class="text-sm text-slate-200 mt-1 font-medium">${escapeHtml(data.corePremise || '')}</p>
+      `;
+      outputContainer.appendChild(headerCard);
+
+      // 2. Hook Variations
+      const hookSection = document.createElement('div');
+      hookSection.className = 'space-y-3';
+      hookSection.innerHTML = `<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">A/B Hook Variations (First 3 Seconds)</h3>`;
+      
+      const hooksGrid = document.createElement('div');
+      hooksGrid.className = 'grid grid-cols-1 gap-3';
+
+      (data.hooks || []).forEach((h, index) => {
+        const hookCard = document.createElement('div');
+        hookCard.className = 'bg-slate-900/70 border border-slate-800 hover:border-slate-700 transition rounded-xl p-4 relative';
+        hookCard.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs px-2 py-0.5 rounded bg-indigo-950 border border-indigo-800/60 text-indigo-300 font-medium">${escapeHtml(h.type)}</span>
+            <button class="copy-btn text-xs text-slate-500 hover:text-slate-300 flex items-center space-x-1" data-copy="${escapeHtml(h.spokenText)}">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Copy</span>
+            </button>
+          </div>
+          <p class="text-sm font-semibold text-slate-100 mb-1.5">"${escapeHtml(h.spokenText)}"</p>
+          <div class="text-xs text-amber-300/90 font-mono mb-2">Overlay: [ ${escapeHtml(h.onScreenText)} ]</div>
+          <p class="text-xs text-slate-400 italic">${escapeHtml(h.retentionRationale)}</p>
+        `;
+        hooksGrid.appendChild(hookCard);
+      });
+      hookSection.appendChild(hooksGrid);
+      outputContainer.appendChild(hookSection);
+
+      // 3. Scene Breakdown
+      const sceneSection = document.createElement('div');
+      sceneSection.className = 'space-y-3';
+      sceneSection.innerHTML = `<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Production Breakdown & Prompts</h3>`;
+
+      (data.scenes || []).forEach((s) => {
+        const sceneCard = document.createElement('div');
+        sceneCard.className = 'bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3';
+        sceneCard.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs font-mono font-semibold text-indigo-400">${escapeHtml(s.timecode)}</span>
+            <button class="copy-btn text-xs text-slate-500 hover:text-slate-300 flex items-center space-x-1" data-copy="${escapeHtml(s.visualPrompt)}">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Copy Visual Prompt</span>
+            </button>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500 uppercase font-semibold mb-0.5">Voiceover</div>
+            <p class="text-xs text-slate-200">${escapeHtml(s.voiceover)}</p>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[11px] text-slate-500 uppercase font-semibold mb-1 flex items-center space-x-1">
+              <i data-lucide="video" class="w-3 h-3 text-indigo-400"></i>
+              <span>Visual Generation Prompt (9:16)</span>
+            </div>
+            <p class="text-xs font-mono text-emerald-400 select-all">${escapeHtml(s.visualPrompt)}</p>
+          </div>
+        `;
+        sceneSection.appendChild(sceneCard);
+      });
+      outputContainer.appendChild(sceneSection);
+
+      // 4. CTA
+      if (data.callToAction) {
+        const ctaCard = document.createElement('div');
+        ctaCard.className = 'bg-indigo-950/30 border border-indigo-900/50 rounded-xl p-3.5 flex items-start space-x-3';
+        ctaCard.innerHTML = `
+          <i data-lucide="message-square" class="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0"></i>
+          <div>
+            <div class="text-xs font-semibold text-indigo-300">Suggested Comment Driver (CTA)</div>
+            <p class="text-xs text-slate-300 mt-0.5">${escapeHtml(data.callToAction)}</p>
+          </div>
+        `;
+        outputContainer.appendChild(ctaCard);
+      }
+
+      // Re-trigger icon rendering
+      lucide.createIcons();
+
+      // Attach copy listeners
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const text = btn.getAttribute('data-copy');
+          navigator.clipboard.writeText(text);
+          const orig = btn.innerHTML;
+          btn.innerHTML = `<span class="text-emerald-400 font-semibold">Copied!</span>`;
+          setTimeout(() => { btn.innerHTML = orig; lucide.createIcons(); }, 1800);
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    generateBtn.addEventListener('click', generateContent);
+  </script>
+</body>
+</html>
